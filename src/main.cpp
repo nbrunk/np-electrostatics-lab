@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
              "chain length for fake system: enter L+1 if you want L thermostats")
             ("box_radius,b", value<double>(&box_radius)->default_value(14.28),
              "simulation box radius")        // enter in nanometers
-            ("bin_width_R,R", value<double>(&bin_width_R)->default_value(0.025), "bin width R")
+            ("bin_width_R,R", value<double>(&bin_width_R)->default_value(0.1), "bin width R")
             ("bin_width_Z,B", value<double>(&bin_width_Z)->default_value(0.2), "bin width Z")
             ("anneal_fmd,A", value<char>(&fmdremote.anneal)->default_value('n'), "anneal in fmd on?")
             ("fmd_fake_mass,m", value<double>(&fmdremote.fakemass)->default_value(1.0), "fmd fake mass")
@@ -189,6 +189,7 @@ int main(int argc, char *argv[]) {
 
     } else {
         //disk
+
         vector<vector<double> > density_pos, density_neg;
         vector<vector<BinRing> > bin_disk_pos, bin_disk_neg;
         NanoParticleDisk np("Disk", bin_disk_pos, bin_disk_neg, bin_width_R, bin_width_Z, ion, density_pos, density_neg,
@@ -201,7 +202,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Set up the system
-    real_T = 1;                                                            // set temperature
+    real_T = 1;
+
+    // set temperature
     // make interface
     nanoParticle->set_up(salt_conc_in, salt_conc_out, salt_valency_in, salt_valency_out, total_gridpoints,
                          box_radius / unitlength);    // set up properties inside and outside the interface

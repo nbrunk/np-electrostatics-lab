@@ -245,12 +245,14 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
 
     char filename[200];
 
+
+    //change infiles folder if nanoparticle radius changes; for a = 2.67m nm = 7.5 sigma in reduced units, infiles_a7.5 is the folder
     if(shape_id == 0){
-        sprintf(filename, "infiles_a1/grid%d.dat",
-                number_of_vertices);
+        sprintf(filename, "infiles_a%.1f/grid%d.dat",
+                radius, number_of_vertices);
     }else{
-        sprintf(filename, "infiles_a1_disk/grid%d.dat",
-                number_of_vertices);
+        sprintf(filename, "infiles_a%.1f_disk/grid%d.dat",
+                radius, number_of_vertices);
     }
 
     ifstream in(filename, ios::in);
@@ -263,7 +265,7 @@ void NanoParticle::discretize(vector<VERTEX> &s, double radius) {
     unsigned int col1;
     double col2, col3, col4, col5, col6, col7, col8;
     while (in >> col1 >> col2 >> col3 >> col4 >> col5 >> col6 >> col7 >> col8)
-        s.push_back(VERTEX(VECTOR3D(radius * col2, radius * col3, radius * col4), radius * radius * col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
+        s.push_back(VERTEX(VECTOR3D(col2, col3, col4), col5, VECTOR3D(col6, col7, col8), area_np, bare_charge));
 
     if (world.rank() == 0) {
         ofstream listvertices("outfiles/interface.xyz", ios::out);
@@ -311,11 +313,12 @@ void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIons
     // Output a file with the number for each step interval (extra information), report alpha & Z_eff using the mean:
     if(num == cpmdremote.steps)    {
         ofstream condensed_ion_kinetics("outfiles/condensed_ion_kinetics.dat", ios::out);
-        for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++){
-            condensed_ion_kinetics << cpmdremote.hiteqm + cpmdremote.freq*i  << "\t" << condensedIonsPerStep[i] << endl;
+        if (world.rank() == 0) {
+            for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++){
+              condensed_ion_kinetics << cpmdremote.hiteqm + cpmdremote.freq*i  << "\t" << condensedIonsPerStep[i] << endl;
+            } 
         }
         condensed_ion_kinetics.close();
-
         //  Compute the time-average number of condensed ions:
         double mean_Condensed_Ion_Count = 0;
         for (unsigned int i = 0; i < condensedIonsPerStep.size(); i++)
@@ -323,9 +326,11 @@ void NanoParticle::compute_effective_charge(int &num, vector<int> &condensedIons
 
         //  Compute the final nanoparticle effective charge (assumes counterion valency set by first ion in list):
         nanoParticle->effective_charge = nanoParticle->bare_charge + ion[0].valency*mean_Condensed_Ion_Count;
-        cout << endl << "\n\tBy Diehl's Method, condensation fraction (alpha) is: " << (mean_Condensed_Ion_Count / ion.size()) << endl;
-        cout << "\tUsing this, the nanoparticle's effective charge is: " << nanoParticle->effective_charge << endl;
-        cout << "\tCondensation kinetics have been output for every interval after the estimated equilibrium step." << endl << endl;
+        if (world.rank() == 0) {
+            cout << endl << "\n\tBy Diehl's Method, condensation fraction (alpha) is: " << (mean_Condensed_Ion_Count / ion.size()) << endl;
+            cout << "\tUsing this, the nanoparticle's effective charge is: " << nanoParticle->effective_charge << endl;
+            cout << "\tCondensation kinetics have been output for every interval after the estimated equilibrium step." << endl << endl;
+        }
     }
 }
 
